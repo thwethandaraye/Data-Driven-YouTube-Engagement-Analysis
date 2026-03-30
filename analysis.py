@@ -35,7 +35,7 @@ for item in top_10:
 
 # Create a bar chart to visualize the top 10 most engaging videos
 plt.figure(figsize=(12, 6))
-plt.barh(video_titles, engagement_scores, color='skyblue')
+plt.barh(video_titles, engagement_scores, color='green')
 plt.xlabel('Engagement Rate')
 plt.title('Top 10 Most Engaging YouTube Videos')
 plt.gca().invert_yaxis()  # Invert y-axis to show the highest engagement at the top
