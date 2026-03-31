@@ -48,7 +48,7 @@ pip install numpy matplotlib
 python src/analysis.py
 ```
 
-4. Output:
-Top 10 engaging videos printed to console
-Bar chart saved to output/top_10_engaging_videos.png
-Viral video statistics printed to console
+4. Output:  
+Top 10 engaging videos printed to console  
+Bar chart saved to output/top_10_engaging_videos.png  
+Viral video statistics printed to console  
