@@ -1,49 +1,100 @@
 import csv
+import numpy as np
 import matplotlib.pyplot as plt
 
-# Lists to store video titles and their corresponding engagement rates
-video_titles = []
-engagement_scores = []
+# Load data from CSV file
+def load_data(file_path):
+    titles = []
+    views =[]
+    likes = []
+    comments = []
 
-# Open the Dataset.csv file and read its contents
-with open("youtube_recommendation_dataset.csv", mode="r", encoding='utf-8') as file:
-    # DictReader uses the first row of the CSV as keys
-    reader = csv.DictReader(file)
+    with open(file_path, mode='r', encoding='utf-8') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            try:
+                view_count = float(row['view_count'])
+                like_count = float(row['like_count'])
+                comment_count = float(row['comment_count'])
+            except ValueError:
+                # Skip rows with invalid data
+                continue
 
-    # Extract Title and Engagement Rate
-    data_list = []
-    for row in reader:
-        # Store the title and engagement rate in a temporary list
-        data_list.append({
-            "title": row["Title"],
-            "engagement_rate": float(row["engagement_rate"])
-        })
+            # skip videos with zero views to avoid division by zero
+            if view_count == 0:
+                continue
 
-# Sort data by engagement (Highest to Lowest)
-# This says: "Sort data_list based on the 'engagement' value"
-data_list.sort(key=lambda x: x['engagement_rate'], reverse=True)
+            titles.append(row['Title'])
+            views.append(view_count)
+            likes.append(like_count)
+            comments.append(comment_count)
 
-# Take the Top 10 most engaging videos
-top_10 = data_list[:10]
-print(top_10)
+    # Convert lists to numpy arrays for analysis
+    views = np.array(views)
+    likes = np.array(likes)
+    comments = np.array(comments)
 
-for item in top_10:
-    # Shorten the title if it's too long for better visualization
-    short_title = item["title"][:20] + "..."
-    video_titles.append(short_title)
-    engagement_scores.append(item["engagement_rate"])
+    return titles, views, likes, comments
 
-# Create a bar chart to visualize the top 10 most engaging videos
-plt.figure(figsize=(12, 6))
-plt.barh(video_titles, engagement_scores, color='green')
-plt.xlabel('Engagement Rate')
-plt.title('Top 10 Most Engaging YouTube Videos')
-plt.gca().invert_yaxis()  # Invert y-axis to show the highest engagement at the top
-plt.tight_layout()
+# Compute engagement metrics
+def compute_engagement(views, likes, comments):
+    # Safe engagement computation
+    engagment = (likes + comments) / views
+    return engagment
 
-# Save the plot as an image file
-plt.savefig("top_10_engaging_videos.png")
-# Show the plot
-plt.show()
+# Get top N videos by engagement
+def get_top_videos(titles, engagment, top_n=10):
+    top_indices = np.argsort(engagment)[-top_n:][::-1]
+    top_titles = [
+        titles[i][:20] + '...' if len(titles[i]) > 20 else titles[i] 
+        for i in top_indices
+        ]
+    top_engagement = engagment[top_indices]
+    return top_titles, top_engagement
 
-print("Analysis complete. The top 10 most engaging videos have been visualized and saved as 'top_10_engaging_videos.png'.")
+# Detect Viral Videos
+def detect_viral(engagement):
+    threshold = np.mean(engagement) + 2 * np.std(engagement)
+    viral_indices = np.where(engagement > threshold)[0]
+    return viral_indices, threshold
+
+# Visualization
+def plot_top_videos(titles, scores, file_name='top_10_engaging_videos.png'):
+    plt.figure(figsize=(10, 6))
+    plt.barh(titles, scores, color='green')
+    plt.xlabel('Engagement Rate')
+    plt.ylabel('Video Title')
+    plt.title('Top 10 Engaging Videos')
+    plt.gca().invert_yaxis() # Invert y-axis to show the highest engagement at the top
+    plt.tight_layout()
+    plt.savefig(file_name)
+    plt.show()
+
+# Main pipeline
+if __name__ == "__main__":
+    # 1. Load Data
+    file_path = 'youtube_recommendation_dataset.csv'
+    titles, views, likes, comments = load_data(file_path)
+
+    # 2. Compute Engagement
+    engagement = compute_engagement(views, likes, comments)
+
+    # 3. Get Top 10 Videos
+    top_titles, top_engagement = get_top_videos(titles, engagement, top_n=10)
+    print("Top 10 Engaging Videos:")
+    for title, score in zip(top_titles, top_engagement):
+        print(f"{title}: {score:.4f}")
+
+    # 4. Plot Top Videos
+    plot_top_videos(top_titles, top_engagement)
+
+    # 5. Detect Viral Videos
+    viral_indices, threshold = detect_viral(engagement)
+    print(f"\nViral Video Threshold: {threshold:.4f}")
+    print(f"Number of Viral Videos: {len(viral_indices)}")
+
+    # 6. Display some statistics
+    print(f"\nDataset Statistics:")
+    print(f"Average Engagement: {np.mean(engagement):.4f}")
+    print(f"Max Engagement: {np.max(engagement):.4f}")
+    print(f"Median Engagement: {np.median(engagement):.4f}")
